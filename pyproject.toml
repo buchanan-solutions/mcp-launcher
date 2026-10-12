@@ -1,0 +1,86 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp-launcher"
+version = "0.1.0"
+description = "Launch any MCP server command with keyring-backed environment profiles"
+readme = "README.md"
+requires-python = ">=3.13"
+authors = [
+    { name = "Alex Buchanan", email = "alex@buchanansolutions.ca" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: POSIX :: Linux",
+    "Intended Audience :: Developers",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dependencies = [
+    "buchanan-solutions-pytools[pydantic-settings,typer]~=0.2.4",
+    "pydantic>=2.12.5",
+    "pyyaml>=6.0.2",
+]
+
+[dependency-groups]
+dev = [
+    "poethepoet>=0.32.0",
+    "pre-commit>=4.0.0",
+    "pyright>=1.1.408",
+    "pytest>=9.0.2",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.15.7",
+]
+
+[project.scripts]
+mcp-launcher = "mcp_launcher.cli.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["mcp_launcher*"]
+
+[tool.setuptools.package-data]
+mcp_launcher = ["templates/*.yaml", "py.typed"]
+
+[tool.poe.tasks]
+test-unit = "pytest -v --cov=mcp_launcher"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "C4", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mcp_launcher"]
+
+[tool.ruff.lint.per-file-ignores]
+# Typer requires Option()/Argument() in signatures
+"**/cli/**/*.py" = ["B008"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.pyright]
+include = ["src", "tests"]
+exclude = ["**/__pycache__", "**/.*"]
+pythonVersion = "3.13"
+typeCheckingMode = "basic"

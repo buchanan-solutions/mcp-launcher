@@ -1,0 +1,36 @@
+version: 1
+
+# Fictional example. Personal endpoints and keyring entries stay outside this repository.
+# `command` is an argument list for any executable: a binary, Node, uvx, or Python.
+
+env:
+  LOG_LEVEL: warning
+
+servers:
+  openproject:
+    command:
+      - /opt/openproject-mcp/bin/openproject-mcp
+
+    env:
+      OPENPROJECT_URL: https://projects.example.test
+
+    profiles:
+      manufacturing-readonly:
+        secrets:
+          OPENPROJECT_API_KEY:
+            service: openproject
+            profile: manufacturing-readonly
+            key: api
+
+      personal:
+        env:
+          LOG_LEVEL: info
+        secrets:
+          OPENPROJECT_URL:
+            service: openproject
+            profile: personal
+            key: url
+          OPENPROJECT_API_KEY:
+            service: openproject
+            profile: personal
+            key: api
