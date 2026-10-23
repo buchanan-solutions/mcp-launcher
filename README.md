@@ -9,7 +9,7 @@ Requires [uv](https://docs.astral.sh/uv/), Git, and Linux. These commands select
 Install directly from GitHub:
 
 ```bash
-uv tool install --python 3.13 "git+https://github.com/buchanan-solutions/mcp-launcher.git"
+uv tool install --python 3.13 "git+https://github.com/buchanan-solutions/mcp-launcher.git@main"
 ```
 
 Or install from a local clone:
@@ -24,15 +24,38 @@ Create the example configuration:
 
 ```bash
 mcp-launcher init
+nano "$(mcp-launcher path)"
+mcp-launcher secrets status
 ```
 
-Edit `~/.config/mcp-launcher/config.yaml` with your server commands, environments, and keyring references. Install the MCP servers separately and store the credentials referenced by your profiles. Then launch:
+Edit the configuration with your server commands, environments, and keyring references. Install the MCP servers separately.
+
+Store the example profile's API credential, matching its `service`, `profile`, and `key` values:
+
+```bash
+secret-tool store --label="OpenProject manufacturing API" \
+  service openproject profile manufacturing-readonly key api
+```
+
+Press Enter, then enter the credential at the hidden prompt. For other profiles and browsing stored entries, see [secrets management](docs/secrets.md).
+
+Launch:
 
 ```bash
 mcp-launcher run openproject --profile manufacturing-readonly
 ```
 
 The example uses fictional settings. Follow the [configuration and client setup guide](docs/usage.md) for a complete setup. If your shell cannot find the command, run `uv tool update-shell` and restart the shell. GUI clients may need the absolute executable path under `uv tool dir --bin`.
+
+### Update
+
+For the latest code from `main`, refresh and reinstall:
+
+```bash
+uv tool install --python 3.13 --reinstall "git+https://github.com/buchanan-solutions/mcp-launcher.git@main"
+```
+
+For normal upgrades using the existing installation source, use `uv tool upgrade mcp-launcher`. A tag or commit pin stays on that reference. See [pinning and updates](docs/installation.md) and [uv tool management](https://docs.astral.sh/uv/concepts/tools/). Updates leave your configuration and keyring entries in place.
 
 ## Why this exists
 
@@ -52,6 +75,10 @@ The keyring reduces plaintext credential duplication; it is not a sandbox or an 
 ## Documentation
 
 - [Configuration, credentials, and client setup](docs/usage.md)
+- [Installation, version pinning, and updates](docs/installation.md)
+- [Secrets management and diagnostics](docs/secrets.md)
+- [Codex / ChatGPT Desktop setup](docs/configuration/Codex.md)
+- [Roadmap](docs/roadmap.md)
 - [Example configuration](examples/config.yaml)
 - [Ubuntu / ChatGPT Desktop keyring troubleshooting](docs/chatgpt-desktop-ubuntu-mcp-keyring.md) — observations and a verified workaround from a specific environment.
 

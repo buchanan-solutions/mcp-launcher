@@ -4,6 +4,7 @@ Install the bundled example, then edit it:
 
 ```bash
 mcp-launcher init
+nano "$(mcp-launcher path)"
 ```
 
 The prompt names the destination. The default is `$XDG_CONFIG_HOME/mcp-launcher/config.yaml`, or `~/.config/mcp-launcher/config.yaml` when `XDG_CONFIG_HOME` is unset. `--config PATH` selects another file for both `init` and `run`. `--yes` skips the question.
@@ -153,3 +154,5 @@ A project-local server command:
 ```
 
 If `mcp-launcher` is not on the client's `PATH`, set `command` to the absolute path from `uv tool dir --bin`.
+
+For prerequisite diagnostics and credential attribute syntax, see [secrets management](secrets.md). For GUI session forwarding, see [Codex setup](configuration/Codex.md).

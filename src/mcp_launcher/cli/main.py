@@ -9,9 +9,11 @@ import typer
 from pytools.logging.one_shot import one_shot
 
 from mcp_launcher.config import default_config_path, load_config
+from mcp_launcher.diagnostics import secrets_status
 from mcp_launcher.errors import LaunchError
 from mcp_launcher.launch import Launcher
 from mcp_launcher.listing import render_listing
+from mcp_launcher.platforms import require_linux
 from mcp_launcher.scaffold import InstallStatus, install_example_config
 from mcp_launcher.secrets import SecretTool
 
@@ -24,6 +26,63 @@ app = typer.Typer(
     no_args_is_help=True,
     rich_markup_mode=None,
 )
+
+
+@app.callback()
+def check_platform() -> None:
+    """Require Linux for command execution (help remains available)."""
+    try:
+        require_linux()
+    except RuntimeError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from None
+
+
+secrets_app = typer.Typer(
+    help=(
+        "Inspect Linux keyring prerequisites. Manage credentials with secret-tool.\n\n"
+        "Store or replace an Outline personal API credential:\n\n"
+        "\b\n"
+        '  secret-tool store --label="Outline personal API" \\\n'
+        "    service outline profile personal key api\n\n"
+        "Press Enter, then enter the secret at the hidden prompt.\n\n"
+        "Match the YAML attributes: service=outline, profile=personal, key=api. "
+        "The label is descriptive; the environment variable name belongs in YAML.\n\n"
+        "Inspect configured secret variable names (no keyring access):\n\n"
+        "\b\n"
+        "  mcp-launcher list outline\n\n"
+        "There is no secrets list command. Browse stored entries with your desktop "
+        "keyring manager (Ubuntu/GNOME: Passwords and Keys). "
+        "Status checks prerequisites, not stored credentials. See docs/secrets.md."
+    ),
+    no_args_is_help=True,
+)
+app.add_typer(secrets_app, name="secrets")
+
+
+@secrets_app.command("status")
+def status() -> None:
+    """Check metadata only; never read secrets, unlock, install, or start a provider.
+
+    Exit 0 means prerequisites were observed ready; exit 1 means missing, locked,
+    or unknown. This does not verify that any configured credential exists.
+    """
+    lines, ready = secrets_status()
+    typer.echo("\n".join(lines))
+    if not ready:
+        raise typer.Exit(code=1)
+
+
+@app.command("path")
+def config_path(
+    config: Path | None = typer.Option(None, "--config", help="Use an explicit config path."),
+) -> None:
+    """Print the absolute config path, even before it exists.
+
+    Honors XDG_CONFIG_HOME. Edit with: nano "$(mcp-launcher path)".
+    """
+    destination = (config if config is not None else default_config_path()).expanduser()
+    typer.echo(str(destination.absolute()))
 
 
 @app.command("run", no_args_is_help=True)
