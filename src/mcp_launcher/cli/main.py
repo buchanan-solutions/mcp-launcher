@@ -85,6 +85,29 @@ def config_path(
     typer.echo(str(destination.absolute()))
 
 
+@app.command("proxy")
+def proxy_command(
+    url: str = typer.Option(..., "--url", help="Upstream Streamable HTTP MCP URL."),
+    bearer_token_env: str | None = typer.Option(
+        None, "--bearer-token-env", help="Environment variable containing the bearer token."
+    ),
+) -> None:
+    """Expose an HTTP MCP server over stdio (requires the proxy extra)."""
+    from mcp_launcher.proxy import serve_proxy
+
+    one_shot(root_level="WARNING", rich=False)
+    try:
+        serve_proxy(url, bearer_token_env)
+    except LaunchError as exc:
+        typer.echo(f"mcp-launcher: {exc}", err=True)
+        raise typer.Exit(code=1) from None
+    except Exception:
+        typer.echo(
+            "mcp-launcher: proxy failed; check upstream connectivity and authentication", err=True
+        )
+        raise typer.Exit(code=1) from None
+
+
 @app.command("run", no_args_is_help=True)
 def run(
     server: str = typer.Argument(

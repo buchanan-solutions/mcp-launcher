@@ -12,6 +12,14 @@ Install directly from GitHub:
 uv tool install --python 3.13 "git+https://github.com/buchanan-solutions/mcp-launcher.git@main"
 ```
 
+For the HTTP-to-stdio proxy **and** keyring launcher, install the optional extra instead (no manual clone or GitHub account needed):
+
+```bash
+uv tool install --python 3.13 'mcp-launcher[proxy] @ git+https://github.com/buchanan-solutions/mcp-launcher.git@main'
+```
+
+`uv` installs Python dependencies, including FastMCP for the proxy extra, in an isolated tool environment. It can download Python 3.13 if needed. See [Ubuntu setup and remote installation](docs/installation.md#ubuntu-setup-on-a-new-machine) for system packages, installing uv, and SSH/keyring requirements.
+
 Or install from a local clone:
 
 ```bash
@@ -55,6 +63,12 @@ For the latest code from `main`, refresh and reinstall:
 uv tool install --python 3.13 --reinstall "git+https://github.com/buchanan-solutions/mcp-launcher.git@main"
 ```
 
+If you installed the proxy extra, retain it when reinstalling:
+
+```bash
+uv tool install --python 3.13 --reinstall 'mcp-launcher[proxy] @ git+https://github.com/buchanan-solutions/mcp-launcher.git@main'
+```
+
 For normal upgrades using the existing installation source, use `uv tool upgrade mcp-launcher`. A tag or commit pin stays on that reference. See [pinning and updates](docs/installation.md) and [uv tool management](https://docs.astral.sh/uv/concepts/tools/). Updates leave your configuration and keyring entries in place.
 
 ## Why this exists
@@ -68,7 +82,7 @@ The goal is a small, predictable handoff: resolve the profile, retrieve its secr
 - **Shared configuration, explicit profiles.** Reuse server definitions across Cursor, Codex, and other clients that launch MCP subprocesses. Every launch names its profile.
 - **Credentials outside client files.** YAML holds keyring references. Secret values are retrieved at launch and passed in the server environment; the launcher does not print them.
 - **Direct execution.** Arguments pass through without a shell or variable expansion. Process replacement keeps standard streams and signals attached to the server.
-- **A narrow scope.** No daemon, protocol proxy, shared server pool, or credential cache. The launcher does not speak MCP.
+- **An optional HTTP bridge.** Install the `proxy` extra to expose Streamable HTTP through stdio using FastMCP. The core launcher remains a direct process handoff, with no daemon, shared server pool, or credential cache.
 
 The keyring reduces plaintext credential duplication; it is not a sandbox or an access-control boundary. The server receives its profile's secrets and inherits the caller's environment. A profile named `readonly` only has the permissions of its underlying credentials. Configuration and keyring entries must be set up on each device.
 
@@ -78,6 +92,7 @@ The keyring reduces plaintext credential duplication; it is not a sandbox or an 
 - [Installation, version pinning, and updates](docs/installation.md)
 - [Secrets management and diagnostics](docs/secrets.md)
 - [Codex / ChatGPT Desktop setup](docs/configuration/Codex.md)
+- [Streamable HTTP proxy and local/live Strapi examples](docs/proxy.md)
 - [Roadmap](docs/roadmap.md)
 - [Example configuration](examples/config.yaml)
 - [Ubuntu / ChatGPT Desktop keyring troubleshooting](docs/chatgpt-desktop-ubuntu-mcp-keyring.md) — observations and a verified workaround from a specific environment.

@@ -2,6 +2,66 @@
 
 Linux is the supported platform. Install [uv](https://docs.astral.sh/uv/), and ensure Git is available. Select Python 3.13 explicitly in the examples below.
 
+## Ubuntu setup on a new machine
+
+Run these commands on the machine that will execute `mcp-launcher` (SSH into it first for remote execution). The repository is public: Git must be installed, but you do not need a GitHub login or a manually maintained clone.
+
+Install system prerequisites:
+
+```bash
+sudo apt update
+sudo apt install git curl ca-certificates
+```
+
+Install uv using its [official installer](https://docs.astral.sh/uv/getting-started/installation/), if not already available:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+. "$HOME/.local/bin/env"
+```
+
+Install both the keyring launcher and optional HTTP-to-stdio proxy directly from GitHub:
+
+```bash
+uv tool install --python 3.13 'mcp-launcher[proxy] @ git+https://github.com/buchanan-solutions/mcp-launcher.git@main'
+uv tool update-shell
+mcp-launcher --help
+mcp-launcher proxy --help
+uv tool dir --bin
+```
+
+Restart your shell if PATH changes are needed. Use the absolute `mcp-launcher` executable path under the directory printed by `uv tool dir --bin` in agent configuration. The GitHub command installs the pushed revision of `main`; uncommitted or unpushed local changes are unavailable there.
+
+uv fetches the source into its cache, builds the package, and installs its declared Python dependencies into an isolated environment. It can download Python 3.13 automatically when unavailable. No separate pip, virtualenv, FastMCP, Node.js, or system Python 3.13 installation is needed for the proxy. The core dependencies are pytools, Pydantic, and PyYAML; the `proxy` extra additionally installs FastMCP (`>=3.4.11,<4`) and its dependencies. Installing the extra includes both commands. Omit the extra for the smaller core launcher. See [uv tool documentation](https://docs.astral.sh/uv/guides/tools/).
+
+### Optional keyring support on Ubuntu
+
+For keyring-backed profiles:
+
+```bash
+sudo apt install libsecret-tools
+mcp-launcher secrets status
+```
+
+An existing Ubuntu desktop login commonly supplies GNOME Keyring and session D-Bus. On a desktop missing the provider or its manager, install:
+
+```bash
+sudo apt install gnome-keyring seahorse
+```
+
+`seahorse` supplies the Passwords and Keys GUI; it is optional. `busctl` (normally supplied by `systemd` on Ubuntu) is used only by prerequisite diagnostics. Installing these packages does not itself establish an unlocked keyring in an SSH session. A headless/SSH host needs a deliberately configured Secret Service session and unlock mechanism; there is no universal package-install command that completes that setup. Alternatively, use `proxy` directly with a host-supplied environment variable, which needs neither `secret-tool` nor a keyring.
+
+For keyring use, create and edit the configuration, then store the credentials on this machine:
+
+```bash
+mcp-launcher init
+nano "$(mcp-launcher path)"
+```
+
+Install an editor of your choice if `nano` is unavailable. Configuration and secrets are not copied from another computer by installation. See [secrets management](secrets.md) and the [local/live Strapi example](proxy.md). Strapi or another upstream HTTP server must already be running and reachable; the proxy does not install or start it.
+
+On other Linux distributions, install the equivalent Git, curl/CA certificates, and optional libsecret client and Secret Service provider with your distribution's package manager. Linux support does not imply every keyring provider or headless session configuration has been verified.
+
 ## Choose a Git reference
 
 ```bash
