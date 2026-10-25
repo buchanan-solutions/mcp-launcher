@@ -27,7 +27,39 @@ mcp-launcher proxy --url http://127.0.0.1:1337/mcp \
   --bearer-token-env STRAPI_MCP_ADMIN_TOKEN
 ```
 
-The option accepts an environment variable name, never the credential value. An absent, empty, or invalid credential fails before serving. Omit the option for an unauthenticated endpoint. URLs must use HTTP or HTTPS, without embedded user information or fragments. Use HTTPS for a live endpoint.
+`--bearer-token-env` accepts an environment variable name. Alternatively, use `--bearer-token TOKEN` for a literal credential (visible in process arguments). Choose at most one token option.
+
+For a URL selected by the environment, use `--url-env STRAPI_MCP_URL` instead of `--url`. Exactly one URL option is required. URL and token sources are independent, so all literal/environment combinations work:
+
+```bash
+mcp-launcher proxy --url-env STRAPI_MCP_URL --bearer-token-env STRAPI_MCP_ADMIN_TOKEN
+```
+
+Both plain profile `env` values and keyring-backed `secrets` populate the same process environment. For example, share one server definition between profiles:
+
+```yaml
+version: 1
+servers:
+  strapi:
+    command: [mcp-launcher, proxy, --url-env, STRAPI_MCP_URL, --bearer-token-env, STRAPI_MCP_ADMIN_TOKEN]
+    profiles:
+      local:
+        env:
+          STRAPI_MCP_URL: http://127.0.0.1:1337/mcp
+          STRAPI_MCP_ADMIN_TOKEN: "LOCAL_TOKEN"
+      live:
+        env:
+          STRAPI_MCP_URL: https://cms.example.test/mcp
+        secrets:
+          STRAPI_MCP_ADMIN_TOKEN:
+            service: strapi
+            profile: live
+            key: api
+```
+
+Use `run strapi --profile local` or `run strapi --profile live` in separate host MCP entries. The local profile above needs no secrets provider. Plain `env` values are visible in `mcp-launcher list` output; restrict access to plaintext credential files.
+
+ An absent, empty, or invalid credential fails before serving. Omit the option for an unauthenticated endpoint. URLs must use HTTP or HTTPS, without embedded user information or fragments. Use HTTPS for a live endpoint.
 
 Only MCP traffic goes to stdout. Diagnostics go to stderr. Upstream discovery errors are reported rather than silently producing an empty tool list. Upstream connections are lazy: process startup alone does not prove credentials or server availability. Token changes require restarting the proxy.
 

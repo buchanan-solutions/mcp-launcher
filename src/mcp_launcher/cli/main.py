@@ -87,7 +87,13 @@ def config_path(
 
 @app.command("proxy")
 def proxy_command(
-    url: str = typer.Option(..., "--url", help="Upstream Streamable HTTP MCP URL."),
+    url: str | None = typer.Option(None, "--url", help="Upstream Streamable HTTP MCP URL."),
+    url_env: str | None = typer.Option(
+        None, "--url-env", help="Environment variable containing the URL."
+    ),
+    bearer_token: str | None = typer.Option(
+        None, "--bearer-token", help="Literal bearer token (visible in process arguments)."
+    ),
     bearer_token_env: str | None = typer.Option(
         None, "--bearer-token-env", help="Environment variable containing the bearer token."
     ),
@@ -97,7 +103,7 @@ def proxy_command(
 
     one_shot(root_level="WARNING", rich=False)
     try:
-        serve_proxy(url, bearer_token_env)
+        serve_proxy(url, bearer_token_env, url_env=url_env, bearer_token=bearer_token)
     except LaunchError as exc:
         typer.echo(f"mcp-launcher: {exc}", err=True)
         raise typer.Exit(code=1) from None

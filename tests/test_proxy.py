@@ -49,10 +49,16 @@ def test_optional_dependency_missing(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("token", "wrapped"),
-    [("fixture-secret", False), ("wrong-secret", False), ("fixture-secret", True)],
+    ("token", "wrapped", "url_from_env", "literal_token"),
+    [
+        ("fixture-secret", False, False, False),
+        ("wrong-secret", False, False, False),
+        ("fixture-secret", True, True, False),
+        ("fixture-secret", False, True, True),
+        ("fixture-secret", False, False, True),
+    ],
 )
-def test_authenticated_round_trip(tmp_path, token, wrapped):
+def test_authenticated_round_trip(tmp_path, token, wrapped, url_from_env, literal_token):
     pytest.importorskip("fastmcp")
     import yaml
     from fastmcp import Client
@@ -99,6 +105,11 @@ mcp.run(transport="http", host="127.0.0.1", port="""
                 "MCP_TEST_TOKEN",
             ]
             env = {"PYTHONPATH": os.path.abspath("src")}
+            if url_from_env:
+                args[3:5] = ["--url-env", "MCP_TEST_URL"]
+                env["MCP_TEST_URL"] = f"http://127.0.0.1:{port}/mcp"
+            if literal_token:
+                args[5:7] = ["--bearer-token", token]
             if wrapped:
                 secret_tool = tmp_path / "secret-tool"
                 secret_tool.write_text("#!/bin/sh\nprintf fixture-secret")
@@ -162,3 +173,47 @@ mcp.run(transport="http", host="127.0.0.1", port="""
             except subprocess.TimeoutExpired:
                 server.kill()
                 server.wait(timeout=5)
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        [],
+        ["--url", "http://localhost/mcp", "--url-env", "URL"],
+        [
+            "--url",
+            "http://localhost/mcp",
+            "--bearer-token",
+            "private-value",
+            "--bearer-token-env",
+            "TOKEN",
+        ],
+    ],
+)
+def test_conflicting_or_missing_options(args):
+    result = CliRunner().invoke(app, ["proxy", *args])
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert "private-value" not in result.stderr
+    assert "one of" in result.stderr
+
+
+@pytest.mark.parametrize("value", [None, ""])
+def test_missing_url_env(monkeypatch, value):
+    if value is None:
+        monkeypatch.delenv("MCP_URL", raising=False)
+    else:
+        monkeypatch.setenv("MCP_URL", value)
+    result = CliRunner().invoke(app, ["proxy", "--url-env", "MCP_URL"])
+    assert result.exit_code == 1
+    assert "missing or empty" in result.stderr
+
+
+@pytest.mark.parametrize("value", ["", "bad\r\nheader", "bad\x00token"])
+def test_invalid_literal_token(value):
+    result = CliRunner().invoke(
+        app, ["proxy", "--url", "http://localhost/mcp", "--bearer-token", value]
+    )
+    assert result.exit_code == 1
+    assert "missing, empty, or invalid" in result.stderr
+    assert result.stdout == ""
